@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Threat Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-xl w-full bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
+        <h1 class="text-3xl font-bold mb-2 text-blue-400">URL Threat Analyzer</h1>
+        <p class="text-gray-400 mb-6">Enter a suspicious link to scan it against global threat intelligence data.</p>
+
+        <div class="flex gap-4 mb-6">
+            <input type="url" id="urlInput" placeholder="https://example.com" required
+                   class="flex-1 bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-600">
+            <button onclick="analyzeUrl()" id="scanBtn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200">
+                Scan
+            </button>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden text-center text-gray-400 py-4">
+            Scanning URL... Please wait.
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorBox" class="hidden bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg mb-4"></div>
+
+        <!-- Results Dashboard -->
+        <div id="results" class="hidden grid grid-cols-2 gap-4 mt-6">
+            <div class="bg-gray-700 p-4 rounded-lg border-l-4 border-red-500">
+                <p class="text-sm text-gray-400 uppercase font-bold">Malicious</p>
+                <p id="resMalicious" class="text-3xl font-bold text-red-400">0</p>
+            </div>
+            <div class="bg-gray-700 p-4 rounded-lg border-l-4 border-yellow-500">
+                <p class="text-sm text-gray-400 uppercase font-bold">Suspicious</p>
+                <p id="resSuspicious" class="text-3xl font-bold text-yellow-400">0</p>
+            </div>
+            <div class="bg-gray-700 p-4 rounded-lg border-l-4 border-green-500">
+                <p class="text-sm text-gray-400 uppercase font-bold">Harmless</p>
+                <p id="resHarmless" class="text-3xl font-bold text-green-400">0</p>
+            </div>
+            <div class="bg-gray-700 p-4 rounded-lg border-l-4 border-gray-500">
+                <p class="text-sm text-gray-400 uppercase font-bold">Undetected</p>
+                <p id="resUndetected" class="text-3xl font-bold text-gray-300">0</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function analyzeUrl() {
+            const urlInput = document.getElementById('urlInput').value;
+            const btn = document.getElementById('scanBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const errorBox = document.getElementById('errorBox');
+
+            if (!urlInput) {
+                alert("Please enter a URL");
+                return;
+            }
+
+            // Reset UI
+            results.classList.add('hidden');
+            errorBox.classList.add('hidden');
+            loading.classList.remove('hidden');
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: urlInput })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('resMalicious').innerText = data.malicious || 0;
+                    document.getElementById('resSuspicious').innerText = data.suspicious || 0;
+                    document.getElementById('resHarmless').innerText = data.harmless || 0;
+                    document.getElementById('resUndetected').innerText = data.undetected || 0;
+                    results.classList.remove('hidden');
+                } else {
+                    errorBox.innerText = data.error || "An error occurred during analysis.";
+                    errorBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorBox.innerText = "Network error. Make sure the backend is running.";
+                errorBox.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            }
+        }
+    </script>
+</body>
+</html>
