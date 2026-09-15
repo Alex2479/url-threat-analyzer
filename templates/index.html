@@ -10,7 +10,7 @@
 
     <div class="max-w-xl w-full bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
         <h1 class="text-3xl font-bold mb-2 text-blue-400">URL Threat Analyzer</h1>
-        <p class="text-gray-400 mb-6">Enter a suspicious link to scan it against global threat intelligence data.</p>
+        <p class="text-gray-400 mb-6">Enter a suspicious link to scan its reputation and network infrastructure.</p>
 
         <div class="flex gap-4 mb-6">
             <input type="url" id="urlInput" placeholder="https://example.com" required
@@ -23,13 +23,13 @@
 
         <!-- Loading Indicator -->
         <div id="loading" class="hidden text-center text-gray-400 py-4">
-            Scanning URL... Please wait.
+            Performing DNS resolution and threat scanning...
         </div>
 
         <!-- Error Message -->
         <div id="errorBox" class="hidden bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg mb-4"></div>
 
-        <!-- Results Dashboard -->
+        <!-- Threat Results Dashboard -->
         <div id="results" class="hidden grid grid-cols-2 gap-4 mt-6">
             <div class="bg-gray-700 p-4 rounded-lg border-l-4 border-red-500">
                 <p class="text-sm text-gray-400 uppercase font-bold">Malicious</p>
@@ -48,6 +48,25 @@
                 <p id="resUndetected" class="text-3xl font-bold text-gray-300">0</p>
             </div>
         </div>
+
+        <!-- Network Infrastructure Dashboard (NEW) -->
+        <div id="networkResults" class="hidden mt-6 bg-gray-900/50 p-5 rounded-lg border border-gray-600">
+            <h2 class="text-lg font-bold mb-3 text-blue-300 border-b border-gray-600 pb-2">Infrastructure Routing</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">Resolved IP</p>
+                    <p id="resIp" class="text-md font-mono text-gray-200 mt-1">...</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">Server Location</p>
+                    <p id="resCountry" class="text-md text-gray-200 mt-1">...</p>
+                </div>
+                <div class="md:col-span-2">
+                    <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">ISP & Autonomous System</p>
+                    <p id="resIsp" class="text-md text-gray-200 mt-1 truncate">...</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -56,6 +75,7 @@
             const btn = document.getElementById('scanBtn');
             const loading = document.getElementById('loading');
             const results = document.getElementById('results');
+            const networkResults = document.getElementById('networkResults');
             const errorBox = document.getElementById('errorBox');
 
             if (!urlInput) {
@@ -65,6 +85,7 @@
 
             // Reset UI
             results.classList.add('hidden');
+            networkResults.classList.add('hidden');
             errorBox.classList.add('hidden');
             loading.classList.remove('hidden');
             btn.disabled = true;
@@ -80,11 +101,20 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    document.getElementById('resMalicious').innerText = data.malicious || 0;
-                    document.getElementById('resSuspicious').innerText = data.suspicious || 0;
-                    document.getElementById('resHarmless').innerText = data.harmless || 0;
-                    document.getElementById('resUndetected').innerText = data.undetected || 0;
+                    // Populate Threat Stats
+                    document.getElementById('resMalicious').innerText = data.threat_stats.malicious || 0;
+                    document.getElementById('resSuspicious').innerText = data.threat_stats.suspicious || 0;
+                    document.getElementById('resHarmless').innerText = data.threat_stats.harmless || 0;
+                    document.getElementById('resUndetected').innerText = data.threat_stats.undetected || 0;
+                    
+                    // Populate Network Stats
+                    document.getElementById('resIp').innerText = data.network.ip || "N/A";
+                    document.getElementById('resCountry').innerText = data.network.country || "N/A";
+                    document.getElementById('resIsp').innerText = data.network.isp || "N/A";
+
+                    // Reveal dashboards
                     results.classList.remove('hidden');
+                    networkResults.classList.remove('hidden');
                 } else {
                     errorBox.innerText = data.error || "An error occurred during analysis.";
                     errorBox.classList.remove('hidden');
